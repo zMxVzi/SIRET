@@ -1,0 +1,102 @@
+{% extends 'base/adminbase.html' %} {% block slide %}
+<div class="navbar-nav w-100">
+  <a href="admin" class="nav-item nav-link"><i class="fa fa-tachometer-alt me-2"></i>Tablero</a>
+  <div class="nav-item dropdown">
+    <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-table me-2"></i>Usuarios</a>
+    <div class="dropdown-menu bg-transparent border-0">
+      <a href="fadmin" class="dropdown-item">Crear usuario</a>
+      <a href="lusers" class="dropdown-item">Lista de usuarios</a>
+    </div>
+  </div>
+  <a href="tarifas" class="nav-item nav-link active"><i class="fa fa-chart-bar me-2"></i>Tarifas</a>
+  <a href="boletos" class="nav-item nav-link"><i class="far fa-file-alt me-2"></i>Sistema</a>
+</div>
+{% endblock %} {% block content %}
+<div class="container-fluid pt-4 px-4">
+  <div class="row g-4">
+    <div class="bg-secondary rounded h-100 p-4">
+        {% with messages = get_flashed_messages()%}
+        {%if messages %}
+            <ul>
+                {% for message in messages%}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fa fa-exclamation-circle me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor%}
+            </ul>
+        {%endif%}
+        {% endwith %}
+      <h6 class="mb-4">Tarifas</h6>
+      <form action="{{ url_for('actializar')}}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Indicador</th>
+            <th scope="col">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tolerancia</strong></td>
+            <td>
+                <div class="input-group mb-3">
+                    <input type="number" class="form-control" name="l1" aria-describedby="basic-addon2" value="{{t.tolerancia}}">
+                    <span class="input-group-text" id="basic-addon2">minutos</span>
+                </div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Primeras 2 hrs</strong></td>
+            <td>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">$</span>
+                    <input type="number" name="l2" class="form-control" aria-describedby="basic-addon2" value="{{t.primeras_dos}}">
+                </div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Hora adicional</strong></td>
+            <td>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">$</span>
+                    <input type="number"name="l3" class="form-control" aria-describedby="basic-addon2" value="{{t.extra}}">
+                </div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Pension por dia (24 hrs)</strong></td>
+            <td>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">$</span>
+                    <input type="number"name="l4" class="form-control" aria-describedby="basic-addon2" value="{{t.pension_dia}}">
+                </div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Pension por semana (168 hrs)</strong></td>
+            <td>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">$</span>
+                    <input type="number"name="l5" class="form-control" aria-describedby="basic-addon2" value="{{t.pension_sem}}">
+                </div>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Pension por mes (720 hrs)</strong></td>
+            <td>
+                <div class="input-group mb-3">
+                    <span class="input-group-text">$</span>
+                    <input type="number" name="l6" class="form-control" aria-describedby="basic-addon2" value="{{t.pension_mes}}">
+                </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="submit" class="btn btn-warning m-2" >Actualizar</button>
+    </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

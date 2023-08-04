@@ -1,0 +1,48 @@
+{% extends 'base/adminbase.html' %}
+{% block slide %}
+<div class="navbar-nav w-100">
+    <a href="admin" class="nav-item nav-link "><i class="fa fa-tachometer-alt me-2"></i>Tablero</a>
+    <div class="nav-item dropdown">
+        <a href="#" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown"><i class="fa fa-table me-2"></i>Usuarios</a>
+        <div class="dropdown-menu bg-transparent border-0">
+            <a href="fadmin" class="dropdown-item ">Crear usuario</a>
+            <a href="lusers" class="dropdown-item active">Lista de usuarios</a>
+        </div>
+    </div>
+    <a href="tarifas" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Tarifas</a>
+    <a href="boletos" class="nav-item nav-link"><i class="far fa-file-alt me-2"></i>Sistema</a>
+</div>
+{% endblock %}
+{% block content %}
+<div class="container-fluid pt-4 px-4">
+    <div class="row g-4">
+        <div class="col-sm-12 col-xl-6">
+            <div class="bg-secondary rounded h-100 p-4">
+                <h6 class="mb-4">Lista de usuarios</h6>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Usuario</th>
+                            <th scope="col">Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for datos in lista: %}
+                    <form action="{{ url_for('eliminar')}}" method="POST">
+                        <tr>
+                            <th scope="row">{{datos.id}}</th>
+                            <td>{{datos.user}}</td>
+                            <input type="hidden" name="id" value="{{datos.id}}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <td><button type="submit" class="btn btn-primary py-3 w-100 mb-4">eliminar</button></td>
+                        </tr>
+                    </form>
+                    {%endfor%}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

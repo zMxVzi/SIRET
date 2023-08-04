@@ -1,0 +1,68 @@
+{% extends 'base/adminbase.html' %}
+{% block slide %}
+<div class="navbar-nav w-100">
+    <div class="navbar-nav w-100">
+        <a href="creador" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Tablero</a>
+        <div class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-users me-2"></i>Usuarios</a>
+            <div class="dropdown-menu bg-transparent border-0">
+                <a href="c_usuarios" class="dropdown-item">Crear usuario</a>
+                <a href="c_listau" class="dropdown-item">Lista de usuarios</a>
+            </div>
+        </div>
+        <a href="c_boletos" class="nav-item nav-link "><i class="fa fa-file-alt me-2"></i>Boletos</a>
+    </div>
+{% endblock %}
+{% block content %}
+            <!-- Recent Sales Start -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-secondary text-center rounded p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h6 class="mb-0">Estacionamientos Registrados</h6>
+                        <!-- <a href="">Show All</a> -->
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table text-start align-middle table-bordered table-hover mb-0">
+                            <thead>
+                                <tr class="text-white">
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Nombre</th>
+                                    <th scope="col">Codigo Postal</th>
+                                    <th scope="col">Telefono</th>
+                                    <th scope="col">Capacidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {%for estacionamientos in estacionamientos:%}
+                                <tr>
+                                    <td>{{estacionamientos.id}}</td>
+                                    <td>{{estacionamientos.nombre}}</td>
+                                    <td>{{estacionamientos.codigo_postal}}</td>
+                                    <td>{{estacionamientos.telefono}}</td>
+                                    <td>${{estacionamientos.capacidad}}</td>
+                                </tr>
+                                {%endfor%} 
+                            </tbody>
+                        </table>
+                        <nav aria-label="Paginación">
+                            <ul class="pagination justify-content-center">
+                                <!-- Botón "anterior" -->
+                                <li class="page-item {% if pagina_actual == 1 %}disabled{% endif %}">
+                                    <a class="btn btn-outline-primary" href="/creador?page={{ pagina_actual - 1 }}" tabindex="-1" {% if pagina_actual == 1 %}aria-disabled="true"{% endif %}>Anterior</a>
+                                </li>
+                                <!-- Números de página -->
+                                {% for pagina_num in range(1, total_paginas + 1) %}
+                                <li class="page-item {% if pagina_num == pagina_actual %}active{% endif %}">
+                                    <a class="btn btn-outline-primary" href="/creador?page={{ pagina_num }}">{{ pagina_num }}</a>
+                                </li>
+                                {% endfor %}
+                                <!-- Botón "siguiente" -->
+                                <li class="page-item {% if pagina_actual == total_paginas %}disabled{% endif %}">
+                                    <a class="btn btn-outline-primary" href="/creador?page={{ pagina_actual + 1 }}" {% if pagina_actual == total_paginas %}aria-disabled="true"{% endif %}>Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+{% endblock %}

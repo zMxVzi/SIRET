@@ -1,0 +1,64 @@
+{% extends 'base/adminbase.html' %}
+
+{% block slide %}
+<div class="navbar-nav w-100">
+    <a href="admin" class="nav-item nav-link "><i class="fa fa-tachometer-alt me-2"></i>Tablero</a>
+    <div class="nav-item dropdown">
+        <a href="#" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown"><i class="fa fa-table me-2"></i>Usuarios</a>
+        <div class="dropdown-menu bg-transparent border-0">
+            <a href="fadmin" class="dropdown-item active">Crear usuario</a>
+            <a href="lusers" class="dropdown-item">Lista de usuarios</a>
+        </div>
+    </div>
+    <a href="tarifas" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Tarifas</a>
+    <a href="boletos" class="nav-item nav-link"><i class="far fa-file-alt me-2"></i>Sistema</a>
+</div>
+{% endblock %}
+
+
+{% block content %}
+
+
+            <!-- Form Start -->
+            <div class="container-fluid pt-4 px-4">
+                <div class="row g-4">
+                    <div class="col-sm-12 col-xl-6">
+                        <div class="bg-secondary rounded h-100 p-4">
+                            <h6 class="mb-4">Registro de Usuarios</h6>
+                            {% with messages = get_flashed_messages()%}
+                            {%if messages %}
+                                <ul>
+                                    {% for message in messages%}
+                                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                        <i class="fa fa-exclamation-circle me-2"></i>{{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                    {% endfor%}
+                                </ul>
+                            {%endif%}
+                            {% endwith %}
+                            <form method="post" action="{{ url_for('fadmin')}}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="mb-3">
+                                    <label for="exampleInputEmail1" class="form-label">Usuario</label>
+                                    <input type="text" class="form-control" id="exampleInputEmail1"
+                                        aria-describedby="emailHelp" name="usuario">
+                                    <div id="emailHelp" class="form-text">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="exampleInputEmail1" class="form-label">Contraseña</label>
+                                    <input type="password" class="form-control" id="exampleInputEmail1"
+                                        aria-describedby="emailHelp" name="contraseña">
+                                    <div id="emailHelp" class="form-text">
+                                    </div>
+                                </div>
+                                <select class="form-select mb-3" aria-label="Default select example" name="roll">
+                                        <option value="Administrador">Administrador</option>
+                                        <option value="Operador" selected>Operador</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary">Registrar</button>
+                            </form>
+                        </div>
+                    </div>
+{% endblock %}

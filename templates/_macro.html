@@ -1,0 +1,11 @@
+{% macro show_form(value) %}
+    <td> {{ value(**kwargs)|safe }}
+    
+    {% if value.errors %}
+        <ul>
+            {% for error in value.errors%}
+                <li>{{ error }}</li>
+            {%endfor%}
+        </ul>
+    {%endif%}
+{%endmacro%}
