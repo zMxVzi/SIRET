@@ -12,7 +12,9 @@ class formu(Form):
                                     validators.DataRequired(message='Es obligatorio pay'),
                                   validators.length(min=4,max=35,message='No jala pay')
                                   ])
-    password = PasswordField('Contraseña')
+    password = PasswordField('Contraseña',[validators.length(min=8, max=15),validators.Regexp(r'^(?=.*[a-z])(?=.*[A-Z]).+$', message='Debe contener al menos una letra Mayuscula'),validators.DataRequired()]
+    )
+        
     honeypot = HiddenField('',[])
 
 class createuser(Form):
