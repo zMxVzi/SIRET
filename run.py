@@ -31,7 +31,7 @@ def before_request():
                     rol='CREADOR')
         db.session.add(user)
         db.session.commit()
-    if 'cliente' not in session and request.endpoint in ['lusers','admin','fadmin','eliminar','boletos']:
+    if 'cliente' not in session and request.endpoint in ['lusers','admin','fadmin','eliminar','boletos','creador','create','tarifas','actualizar','llegada','salida','c_usuarios','c_listau','c_boletos']:
         return redirect(url_for('login'))
 
 @app.after_request
@@ -49,7 +49,6 @@ def login():
     if request.method == 'POST' and hform.validate():
         username = hform.user.data
         passwordd = hform.password.data
-
         user = User.query.filter_by(user = username).first()
         if user is not None and user.verify_password(passwordd):
             session['cliente'] = username
