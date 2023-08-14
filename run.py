@@ -9,7 +9,13 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+app.run(port=8000)
 csrf = CSRFProtect()
+csrf.init_app(app)
+
 
 @app.before_request
 def before_request():
@@ -294,10 +300,3 @@ def ajax_login():
     response = {'satus':200,'user':user,'id':1}
     return json.dumps(response) 
 
-if __name__ == '__main__':
-    csrf.init_app(app)
-    db.init_app(app)
-    with app.app_context():
-        db.create_all()
-    app.run(port=5000)
-   
