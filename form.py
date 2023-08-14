@@ -12,8 +12,7 @@ class formu(Form):
                                     validators.DataRequired(message='Es obligatorio pay'),
                                   validators.length(min=4,max=35,message='No jala pay')
                                   ])
-    password = PasswordField('Contraseña',[validators.length(min=8, max=15),validators.Regexp(r'^(?=.*[a-z])(?=.*[A-Z]).+$', message='Debe contener al menos una letra Mayuscula'),validators.DataRequired()]
-    )
+    password = PasswordField('Contraseña')
         
     honeypot = HiddenField('',[])
 
@@ -34,7 +33,7 @@ class registrar_estacionamiento(Form):
     codigo_postal=IntegerField('Coodigo Postal', [validators.data_required()])
     telefono = TelField('Telefono', [validators.length(min=10),validators.data_required()])
     user = StringField('Usuario', [validators.length(min=4,max=15),validators.data_required()])
-    password = PasswordField('Contraseña', [validators.length(min=4,max=15),validators.data_required()])
+    password = PasswordField('Contraseña',[validators.length(min=8, max=15),validators.Regexp(r'^(?=.*[a-z])(?=.*[A-Z]).+$', message='Debe contener al menos una letra Mayuscula'),validators.DataRequired()])
 
     def validate_user(form,valor):
         username = valor.data
