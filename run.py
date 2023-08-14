@@ -16,7 +16,6 @@ app.run(port=8000)
 csrf = CSRFProtect()
 csrf.init_app(app)
 
-
 @app.before_request
 def before_request():
     missing = User.query.filter_by(user='admin').first()
@@ -300,3 +299,10 @@ def ajax_login():
     response = {'satus':200,'user':user,'id':1}
     return json.dumps(response) 
 
+if __name__ == '__main__':
+    csrf.init_app(app)
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+    app.run(port=5000)
+   
