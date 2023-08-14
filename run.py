@@ -138,7 +138,10 @@ def eliminar():
     usuario = User.query.filter_by(id=idd).first()
     db.session.delete(usuario)
     db.session.commit()
-    return redirect(url_for('lusers'))
+    if session['rol'] == 'CREADOR':
+        return redirect(url_for('c_listau'))
+    else:
+        return redirect(url_for('lusers'))
 
 @app.route('/create', methods = ['GET','POST'])
 def create():
