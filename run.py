@@ -12,8 +12,7 @@ app.config.from_object(DevelopmentConfig)
 db.init_app(app)
 with app.app_context():
     db.create_all()
-app.run(port=8000)
-csrf = CSRFProtect()
+csrf = CSRFProtect(app)
 csrf.init_app(app)
 
 @app.before_request
@@ -300,9 +299,5 @@ def ajax_login():
     return json.dumps(response) 
 
 if __name__ == '__main__':
-    csrf.init_app(app)
-    db.init_app(app)
-    with app.app_context():
-        db.create_all()
-    app.run(port=5000)
+    app.run(port=8000)
    
