@@ -24,21 +24,23 @@
                         <tr>
                             <th scope="col">#</th>
                             <th scope="col">Usuario</th>
-                            <!-- <th scope="col">Accion</th> -->
+                            <th scope="col">Accion</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <!-- {% for datos in lista: %}
+                    {% for datos in lista: %}
                     <form action="{{ url_for('eliminar')}}" method="POST">
                         <tr>
                             <th scope="row">{{datos.id}}</th>
                             <td>{{datos.user}}</td>
                             <input type="hidden" name="id" value="{{datos.id}}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <td><button type="submit" class="btn btn-primary py-3 w-100 mb-4">eliminar</button></td>
+                            {%if datos.user != usuario%}
+                            <td><button type="submit" class="btn btn-sm btn-primary py-3 w-100 mb-4">eliminar</button></td>
+                            {%endif%}
                         </tr>
                     </form>
-                    {%endfor%} -->
+                    {%endfor%}
                     </tbody>
                 </table>
             </div>

@@ -39,14 +39,14 @@
                                 <div class="mb-3">
                                     <label for="exampleInputEmail1" class="form-label">Usuario</label>
                                     <input type="text" class="form-control" id="exampleInputEmail1"
-                                        aria-describedby="emailHelp" name="usuario">
+                                        aria-describedby="emailHelp" name="usuario" required>
                                     <div id="emailHelp" class="form-text">
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="exampleInputEmail1" class="form-label">Contraseña</label>
                                     <input type="password" class="form-control" id="exampleInputEmail1"
-                                        aria-describedby="emailHelp" name="contraseña">
+                                        aria-describedby="emailHelp" name="contraseña" minlength=8 required>
                                     <div id="emailHelp" class="form-text">
                                     </div>
                                 </div>
@@ -55,7 +55,7 @@
                                         <option value="Operador" selected>Operador</option>
                                 </select>
                                     <select class="form-select mb-3" aria-label="Default select example" name="estacionamiento">
-                                        <option selected>Elige una opción</option>
+                                        <option selected>Elige un estacionamiento</option>
                                         {%for estacionamiento in lista:%}
                                             <option value="{{estacionamiento.nombre}}">{{estacionamiento.nombre}}</option>
                                         {%endfor%}
