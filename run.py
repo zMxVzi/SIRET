@@ -25,8 +25,8 @@ def before_request():
                     telefono=None)
         db.session.add(estacionamiento)
         db.session.commit()
-        user = User(user = 'admin',
-                    password='admin',
+        user = User(user = 'super',
+                    password='super',
                     estacionamiento= 'SIRET',
                     rol='CREADOR')
         db.session.add(user)
