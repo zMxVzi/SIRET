@@ -3,4 +3,4 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://admin:Sincontra1@siret.cfnop33q4azw.us-east-1.rds.amazonaws.com/SIRET'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:sincontra1@localhost:3306/SIRET'

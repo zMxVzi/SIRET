@@ -52,13 +52,16 @@ class Boletos(db.Model):
     entrada = db.Column(db.DateTime)
     salida = db.Column(db.DateTime)
     tarifa = db.Column(db.Integer)
+    estado = db.Column(db.String(15))
 
-    def __init__(self, entrada,salida,tarifa,operador,estacionamiento):
+
+    def __init__(self, entrada,salida,tarifa,operador,estacionamiento,estado):
         self.entrada = entrada
         self.salida = salida
         self.tarifa = tarifa
         self.operador = operador
         self.estacionamiento = estacionamiento
+        self.estado = estado
 
 class Tarifas(db.Model):
     id = db.Column(db.Integer, primary_key=True)

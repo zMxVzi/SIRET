@@ -1,11 +1,19 @@
 from flask import redirect,flash,g
-from flask import Flask,request,render_template,make_response,session,redirect,url_for
+from flask import Flask,request,render_template,make_response,session,redirect,url_for,send_file
 from flask_wtf import CSRFProtect
 from config import DevelopmentConfig
 from models import User,db,Estacionamientos,Boletos,Tarifas
 import form
 import json
+import  os
 from datetime import datetime
+from tickets import Ticket
+from reportlab.pdfgen import canvas
+from PIL import Image
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib.units import inch
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
@@ -189,15 +197,49 @@ def actializar():
 
 @app.route('/llegada', methods = ['POST']) #Finish
 def llegada():
-    nombre_user = session['cliente']
+    nombre_user = session.get('cliente')
     esta = User.query.filter_by(user=nombre_user).first()
-    muestra = "show"
-    if request.method == 'POST':
-        boleto = Boletos(entrada=request.form['fecha'],salida=None,tarifa=None,operador=nombre_user,estacionamiento=esta.estacionamiento)
-        db.session.add(boleto)
-        db.session.commit()
-        
-    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera=True,boleto=boleto,muestra1=muestra)
+    estacionamiento  = Estacionamientos.query.filter_by(nombre=esta.estacionamiento).first()
+    muestra = "show" #bandera
+    espacio = Boletos.query.filter_by(estado='Pendiente').count()
+    if espacio <= estacionamiento.capacidad :
+        boleto = None  # Inicializa boleto fuera del bloque 'POST'
+
+        if request.method == 'POST':
+            boleto = Boletos(entrada=request.form['fecha'], salida=None, tarifa=None, operador=nombre_user,
+                             estacionamiento=esta.estacionamiento,estado= "Pendiente")
+            db.session.add(boleto)
+            db.session.commit()
+        img_data = Ticket.gen_qr(boleto.id)
+    else:
+        success_message = 'Estacionamiento lleno'
+        flash(success_message)
+        return redirect(url_for('boletos'))
+    return render_template('boletos.html', est=esta, usuario=nombre_user, bandera=True, boleto=boleto, muestra1=muestra, qr_code=img_data)
+
+@app.route('/pdf')
+def get_pdf():
+    idd = request.args.get('id','null')
+    boleto = Boletos.query.filter_by(id=idd).first()
+    pdf = Ticket.gen_pdf(boleto)
+    return send_file(pdf, as_attachment=True)
+
+@app.route('/calculo', methods = ['POST'])
+def calculo():
+    muestra2="show"
+    nombre_user =  session['cliente']
+    esta = User.query.filter_by(user=nombre_user).first()
+    boleto =  Boletos.query.filter_by(id=request.form['codigo']).first()
+    if boleto.estado == "Pendiente":
+        if request.method == 'POST':
+            tarifa = Ticket.calculo_t(boleto,request.form['salida'],esta)
+            bandera = True
+    else:
+        tarifa = 0
+        bandera=False
+        success_message = 'Este boleto ya no es vigente'
+        flash(success_message)
+    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera2=bandera,boleto=boleto,total=tarifa,salida=boleto.salida, muestra2=muestra2)
 
 @app.route('/salida', methods = ['POST']) #Finish
 def salida():
@@ -205,37 +247,17 @@ def salida():
     nombre_user = session['cliente']
     esta = User.query.filter_by(user=nombre_user).first()
     boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
-    if boleto.tarifa is None:
-        if request.method == 'POST':
-            Boletos.query.filter_by(id=request.form['codigo']).update(
-                dict(salida=request.form['salida']))
-            db.session.commit()
-            boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
-            fecha1_dt = datetime.strptime(str(boleto.entrada), '%Y-%m-%d %H:%M:%S')
-            fecha2_dt = datetime.strptime(str(boleto.salida), '%Y-%m-%d %H:%M:%S')
-            tiempo = fecha2_dt - fecha1_dt
-            tiempo = tiempo.total_seconds() / 60
-            tarifa = Tarifas.query.filter_by(estacionamiento=esta.estacionamiento).first()
-            if tiempo <= 15 :
-                total = 0
-            elif tiempo <=120 :
-                total = tarifa.primeras_dos
-            elif tiempo >=121 :
-                tiempo = tiempo -120
-                if tiempo <=59:
-                    total = tarifa.primeras_dos+tarifa.extra
-                else:
-                    total = (tiempo//60)*tarifa.extra+tarifa.primeras_dos
-            bandera=True
-            Boletos.query.filter_by(id=request.form['codigo']).update(
-                dict(tarifa=total))
-            db.session.commit()
-    else:
-        total = 0
-        bandera=False
-        success_message = 'Este boleto ya no es vigente'
+    if request.method == 'POST':
+        tarifa = Ticket.calculo_t(boleto, boleto.salida, esta)
+        bandera=True
+        Boletos.query.filter_by(id=request.form['codigo']).update(
+            dict(tarifa=tarifa))
+        Boletos.query.filter_by(id=request.form['codigo']).update(
+            dict(estado="Pagado"))
+        db.session.commit()
+        success_message = 'Transaccion correcta'
         flash(success_message)
-    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera2=bandera,boleto=boleto,total=total,salida=boleto.salida, muestra2=muestra2)
+    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera2=bandera,boleto=boleto,total=tarifa,salida=boleto.salida, muestra2=muestra2)
 
 @app.route('/creador')
 def creador():
