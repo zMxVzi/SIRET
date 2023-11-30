@@ -21,7 +21,7 @@ class Ticket:
             box_size=10,
             border=4,
         )
-        qr.add_data(str(url + "/pdf?id=" + str(id)))
+        qr.add_data(str(url + "/calculo?id=" + str(id)))
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         img_bytes_io = BytesIO()

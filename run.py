@@ -6,7 +6,7 @@ from models import User,db,Estacionamientos,Boletos,Tarifas
 import form
 import json
 import  os
-from datetime import datetime
+from datetime import datetime, timedelta
 from tickets import Ticket
 from reportlab.pdfgen import canvas
 from PIL import Image
@@ -14,6 +14,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.units import inch
+import pytz
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
@@ -79,9 +80,10 @@ def createe():
                     capacidad=hform.capacidad.data,
                     codigo_postal=hform.codigo_postal.data,
                     telefono=hform.telefono.data)
-        db.session.add(estacionamiento)
-        db.session.commit()
+
+        #db.session.commit()
         user = User(estacionamiento=hform.nombre.data,user=hform.user.data,password=hform.password.data,rol="Administrador")
+        db.session.add(estacionamiento)
         db.session.add(user)
         db.session.commit()
         precios = Tarifas(tolerancia=15,primeras_dos=20,extra=20,pension_dia=200,pension_sem=1000,pension_mes=4000,estacionamiento=hform.nombre.data)
@@ -224,20 +226,38 @@ def get_pdf():
     pdf = Ticket.gen_pdf(boleto)
     return send_file(pdf, as_attachment=True)
 
-@app.route('/calculo', methods = ['POST'])
+@app.route('/calculo')
 def calculo():
-    muestra2="show"
-    nombre_user =  session['cliente']
+    idd = request.args.get('id', 'null')
+    print(idd)
+    if idd is not None:
+        boleto = Boletos.query.filter_by(id=idd).first()
+        hora_actual_utc = datetime.utcnow()
+        # Ajusta la hora según UTC-06:00
+        zona_horaria_utc_06 = pytz.timezone('America/Mexico_City')
+        hora_actual_utc_06 = hora_actual_utc.replace(tzinfo=pytz.utc).astimezone(zona_horaria_utc_06)
+        # Formatea la hora actual
+        hora_formateada = hora_actual_utc_06.strftime('%Y-%m-%dT%H:%M')
+        sal = hora_formateada
+    else:
+        boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
+        sal = request.form['salida']
+    nombre_user = session['cliente']
     esta = User.query.filter_by(user=nombre_user).first()
-    boleto =  Boletos.query.filter_by(id=request.form['codigo']).first()
-    if boleto.estado == "Pendiente":
-        if request.method == 'POST':
-            tarifa = Ticket.calculo_t(boleto,request.form['salida'],esta)
-            bandera = True
+    muestra2 = "show"  # bandera para mostrar
+    if session['estacionamiento'] == boleto.estacionamiento:
+        if boleto.estado == "Pendiente":
+                tarifa = Ticket.calculo_t(boleto,sal,esta)
+                bandera = True
+        else:
+            tarifa = 0
+            bandera=False
+            success_message = 'Este boleto ya no es vigente'
+            flash(success_message)
     else:
         tarifa = 0
-        bandera=False
-        success_message = 'Este boleto ya no es vigente'
+        bandera = False
+        success_message = 'Este boleto no es de este estacionamiento'
         flash(success_message)
     return render_template('boletos.html',est = esta,usuario = nombre_user,bandera2=bandera,boleto=boleto,total=tarifa,salida=boleto.salida, muestra2=muestra2)
 

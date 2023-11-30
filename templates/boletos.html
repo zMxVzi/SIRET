@@ -40,7 +40,7 @@
                                 <div class="row mb-3">
                                     <label for="inputEmail3" class="col-sm-2 col-form-label">Llegada</label>
                                     <div class="col-sm-10">
-                                        <input type="datetime-local" name="fecha" class="form-control" id="inputEmail3" required>
+                                        <input type="datetime-local" name="fecha" class="form-control" id="autosali" required>
                                     </div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Registrar</button>
@@ -118,12 +118,14 @@
                             <div class="row mb-3">
                                 <label for="inputEmail3" class="form-label">Hora de salida</label>
                                 <div class="col-sm-10">
-                                    <input type="datetime-local" name="salida" class="form-control" id="inputEmail3" required>
+                                    <input type="datetime-local" name="salida" class="form-control" id="autosali" required>
                                 </div>
                             </div>
                             <button type="submit" class="btn btn-primary">Calcular</button>
                         </form>
+
                         {%endif%}
+
                         {%if bandera2 %}
                             <div class="col-sm-12 col-xl-6">
                             <div class="bg-secondary rounded h-100 p-4">
@@ -181,5 +183,27 @@
             </div>
         </div>
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Obtén la referencia al campo de datetime-local
+        var inputLlegada = document.querySelector('input[name="fecha"]');
+        var inputSalida = document.querySelector('input[name="salida"]');
 
+        // Obtén la hora actual en UTC
+        var horaActualUTC = new Date();
+
+        // Ajusta la hora según UTC-06:00
+        var horaActualUTC_06 = new Date(horaActualUTC.getTime() - (6 * 60 * 60 * 1000));
+
+        // Formatea la hora actual en formato 'YYYY-MM-DDTHH:mm'
+        var horaFormateadaUTC_06 = horaActualUTC_06.toISOString().slice(0, 16);
+
+        // Establece el valor predeterminado del campo de llegada
+        inputLlegada.value = horaFormateadaUTC_06;
+
+        // Si es necesario, establece el valor predeterminado del campo de salida
+        inputSalida.value = horaFormateadaUTC_06;
+    });
+</script>
 {% endblock %}
+
