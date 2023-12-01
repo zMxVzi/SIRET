@@ -15,6 +15,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.units import inch
 import pytz
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
@@ -115,7 +116,11 @@ def admin():
                            .limit(boletos_por_pagina) \
                            .offset((pagina - 1) * boletos_por_pagina) \
                            .all()
-    return render_template('adminpage.html', est=esta, usuario=nombre_user, boletos=boletos, pagina_actual=pagina, total_paginas=total_paginas)
+    query = text("SELECT calcularSumaTarifas() as suma")
+    with db.engine.connect() as connection:
+        result = connection.execute(query)
+        suma = result.scalar()
+    return render_template('adminpage.html', est=esta, usuario=nombre_user, boletos=boletos, pagina_actual=pagina, total_paginas=total_paginas,ingresos=suma)
 
 @app.route('/fadmin', methods = ['GET','POST'])
 def fadmin():
@@ -228,7 +233,7 @@ def get_pdf():
 
 @app.route('/calculo')
 def calculo():
-    idd = request.args.get('id', 'null')
+    idd = request.args.get('id')
     print(idd)
     if idd is not None:
         boleto = Boletos.query.filter_by(id=idd).first()
