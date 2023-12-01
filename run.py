@@ -231,10 +231,9 @@ def get_pdf():
     pdf = Ticket.gen_pdf(boleto)
     return send_file(pdf, as_attachment=True)
 
-@app.route('/calculo')
-def calculo():
+@app.route('/calculoqr')
+def precal():
     idd = request.args.get('id')
-    print(idd)
     if idd is not None:
         boleto = Boletos.query.filter_by(id=idd).first()
         hora_actual_utc = datetime.utcnow()
@@ -244,9 +243,31 @@ def calculo():
         # Formatea la hora actual
         hora_formateada = hora_actual_utc_06.strftime('%Y-%m-%dT%H:%M')
         sal = hora_formateada
-    else:
-        boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
-        sal = request.form['salida']
+        nombre_user = session['cliente']
+        esta = User.query.filter_by(user=nombre_user).first()
+        muestra2 = "show"  # bandera para mostrar
+        if session['estacionamiento'] == boleto.estacionamiento:
+            if boleto.estado == "Pendiente":
+                tarifa = Ticket.calculo_t(boleto, sal, esta)
+                bandera = True
+            else:
+                tarifa = 0
+                bandera = False
+                success_message = 'Este boleto ya no es vigente'
+                flash(success_message)
+        else:
+            tarifa = 0
+            bandera = False
+            success_message = 'Este boleto no es de este estacionamiento'
+            flash(success_message)
+        return render_template('boletos.html', est=esta, usuario=nombre_user, bandera2=bandera, boleto=boleto,
+                               total=tarifa, salida=boleto.salida, muestra2=muestra2)
+
+
+@app.route('/calculo', methods = ['POST'])
+def calculo():
+    boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
+    sal = request.form['salida']
     nombre_user = session['cliente']
     esta = User.query.filter_by(user=nombre_user).first()
     muestra2 = "show"  # bandera para mostrar
