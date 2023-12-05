@@ -24,6 +24,8 @@
                         <tr>
                             <th scope="col">#</th>
                             <th scope="col">Usuario</th>
+                            <th scope="col">Contraseña</th>
+                            <th scope="col">Opcion</th>
                             <th scope="col">Accion</th>
                         </tr>
                     </thead>
@@ -33,10 +35,29 @@
                         <tr>
                             <th scope="row">{{datos.id}}</th>
                             <td>{{datos.user}}</td>
+                            <td><input type="password" class="form-control" name="new_password" aria-describedby="basic-addon2"></td>
                             <input type="hidden" name="id" value="{{datos.id}}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <td>
+                                <fieldset class="row mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="opcion"
+                                                id="gridRadios1" value="1" checked>
+                                            <label class="form-check-label" for="gridRadios1">
+                                                Eliminar
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="opcion"
+                                                id="gridRadios2" value="2">
+                                            <label class="form-check-label" for="gridRadios2">
+                                                Actualizar
+                                            </label>
+                                        </div>
+                                </fieldset>
+                            </td>
                             {%if datos.user != usuario%}
-                            <td><button type="submit" class="btn btn-sm btn-primary py-3 w-100 mb-4">eliminar</button></td>
+                            <td><button type="submit" class="btn btn-sm btn-primary py-3 w-100 mb-4">Ejecutar</button></td>
                             {%endif%}
                         </tr>
                     </form>

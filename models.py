@@ -1,8 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash,check_password_hash
-import datetime
 
 db = SQLAlchemy()
+
 class Estacionamientos(db.Model):
     __tablename__ = 'estacionamientos'
 
@@ -28,21 +28,21 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     estacionamiento = db.Column(db.ForeignKey('estacionamientos.nombre'))
     user = db.Column(db.String(50),unique=True)
-    password = db.Column(db.String(102))
+    passsword = db.Column(db.String(102))
     rol = db.Column(db.String(50))
     # boletos = db.relationship('Boletos')
 
-    def __init__(self, user, password,rol,estacionamiento):
+    def __init__(self, user, passsword,rol,estacionamiento):
         self.user = user
-        self.password = self.__create_password(password)
+        self.passsword = self.create_password(passsword)
         self.rol = rol
         self.estacionamiento = estacionamiento
 
-    def __create_password(self,password):
-        return generate_password_hash(password)
+    def create_password(self,passsword):
+        return generate_password_hash(passsword)
     
-    def verify_password(self,password):
-        return check_password_hash(self.password,password)
+    def verify_password(self,passsword):
+        return check_password_hash(self.passsword,passsword)
 
 class Boletos(db.Model):
     __tablename__ = 'Boletos'
@@ -81,6 +81,7 @@ class Tarifas(db.Model):
         self.pension_sem = pension_sem
         self.tolerancia = tolerancia
         self.estacionamiento = estacionamiento
+
 
 
 

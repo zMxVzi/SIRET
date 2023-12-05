@@ -15,6 +15,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.units import inch
 import pytz
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
@@ -35,7 +36,7 @@ def before_request():
         db.session.add(estacionamiento)
         db.session.commit()
         user = User(user = 'admin',
-                    password='admin',
+                    passsword='admin',
                     estacionamiento= 'SIRET',
                     rol='CREADOR')
         db.session.add(user)
@@ -82,7 +83,7 @@ def createe():
                     telefono=hform.telefono.data)
 
         #db.session.commit()
-        user = User(estacionamiento=hform.nombre.data,user=hform.user.data,password=hform.password.data,rol="Administrador")
+        user = User(estacionamiento=hform.nombre.data,user=hform.user.data,passsword=hform.password.data,rol="Administrador")
         db.session.add(estacionamiento)
         db.session.add(user)
         db.session.commit()
@@ -115,7 +116,11 @@ def admin():
                            .limit(boletos_por_pagina) \
                            .offset((pagina - 1) * boletos_por_pagina) \
                            .all()
-    return render_template('adminpage.html', est=esta, usuario=nombre_user, boletos=boletos, pagina_actual=pagina, total_paginas=total_paginas)
+    query = text("SELECT calcularSumaTarifas() as suma")
+    with db.engine.connect() as connection:
+        result = connection.execute(query)
+        suma = result.scalar()
+    return render_template('adminpage.html', est=esta, usuario=nombre_user, boletos=boletos, pagina_actual=pagina, total_paginas=total_paginas,ingresos=suma)
 
 @app.route('/fadmin', methods = ['GET','POST'])
 def fadmin():
@@ -124,7 +129,7 @@ def fadmin():
     hform = form.createuser(request.form)
     if request.method == 'POST':
         user = User(user = request.form['usuario'],
-                    password=request.form['contraseña'],
+                    passsword=request.form['contraseña'],
                     estacionamiento= session['estacionamiento'],
                     rol= request.form['roll'])
         db.session.add(user)
@@ -141,17 +146,42 @@ def lusers():
     lista = User.query.filter(User.estacionamiento.endswith(esta.estacionamiento)).all()
     return render_template('usuarios.html',est = esta,usuario = nombre_user, lista = lista)
 
-@app.route('/eliminar', methods = ['GET','POST'])
+@app.route('/eliminar', methods = ['POST'])
 def eliminar():
-    if request.method == 'POST':
-        idd = request.form['id']
+    idd = request.form['id']
     usuario = User.query.filter_by(id=idd).first()
-    db.session.delete(usuario)
-    db.session.commit()
-    if session['rol'] == 'CREADOR':
-        return redirect(url_for('c_listau'))
+    if request.form['opcion'] == "1":
+        db.session.delete(usuario)
+        db.session.commit()
+        if session['rol'] == 'CREADOR':
+            return redirect(url_for('c_listau'))
+        else:
+            return redirect(url_for('lusers'))
     else:
-        return redirect(url_for('lusers'))
+        password = request.form['new_password']
+        print(password)
+        sha = User.create_password(password,password)
+        print(sha)
+        query = text("CALL actualizar_contrasena(:id, :nueva_contrasena)")
+        with db.engine.connect() as connection:
+            connection.execute(query, id=idd, nueva_contrasena=sha)
+        if session['rol'] == 'CREADOR':
+            return redirect(url_for('c_listau'))
+        else:
+            return redirect(url_for('lusers'))
+
+def upadteuser():
+    if request.method == 'POST':
+        nombre_user = session['cliente']
+        usermod = request.form('')
+        esta = User.query.filter_by(user=nombre_user).first()
+        Tarifas.query.filter_by(estacionamiento=esta.estacionamiento).update(
+            dict(tolerancia=request.form['l1'],
+                 primeras_dos=request.form['l2'],extra=request.form['l3'],pension_dia=request.form['l4'],pension_sem=request.form['l6'],pension_mes=request.form['l6']))
+        db.session.commit()
+        success_message = 'Tarifas Actualizadas Correctamente'
+        flash(success_message)
+    return redirect(url_for('tarifas'))
 
 @app.route('/create', methods = ['GET','POST'])
 def create():
@@ -226,10 +256,9 @@ def get_pdf():
     pdf = Ticket.gen_pdf(boleto)
     return send_file(pdf, as_attachment=True)
 
-@app.route('/calculo')
-def calculo():
-    idd = request.args.get('id', 'null')
-    print(idd)
+@app.route('/calculoqr')
+def precal():
+    idd = request.args.get('id')
     if idd is not None:
         boleto = Boletos.query.filter_by(id=idd).first()
         hora_actual_utc = datetime.utcnow()
@@ -239,9 +268,31 @@ def calculo():
         # Formatea la hora actual
         hora_formateada = hora_actual_utc_06.strftime('%Y-%m-%dT%H:%M')
         sal = hora_formateada
-    else:
-        boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
-        sal = request.form['salida']
+        nombre_user = session['cliente']
+        esta = User.query.filter_by(user=nombre_user).first()
+        muestra2 = "show"  # bandera para mostrar
+        if session['estacionamiento'] == boleto.estacionamiento:
+            if boleto.estado == "Pendiente":
+                tarifa = Ticket.calculo_t(boleto, sal, esta)
+                bandera = True
+            else:
+                tarifa = 0
+                bandera = False
+                success_message = 'Este boleto ya no es vigente'
+                flash(success_message)
+        else:
+            tarifa = 0
+            bandera = False
+            success_message = 'Este boleto no es de este estacionamiento'
+            flash(success_message)
+        return render_template('boletos.html', est=esta, usuario=nombre_user, bandera2=bandera, boleto=boleto,
+                               total=tarifa, salida=boleto.salida, muestra2=muestra2)
+
+
+@app.route('/calculo', methods = ['POST'])
+def calculo():
+    boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
+    sal = request.form['salida']
     nombre_user = session['cliente']
     esta = User.query.filter_by(user=nombre_user).first()
     muestra2 = "show"  # bandera para mostrar
