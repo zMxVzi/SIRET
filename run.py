@@ -36,7 +36,7 @@ def before_request():
         db.session.add(estacionamiento)
         db.session.commit()
         user = User(user = 'admin',
-                    password='admin',
+                    passsword='admin',
                     estacionamiento= 'SIRET',
                     rol='CREADOR')
         db.session.add(user)
@@ -83,7 +83,7 @@ def createe():
                     telefono=hform.telefono.data)
 
         #db.session.commit()
-        user = User(estacionamiento=hform.nombre.data,user=hform.user.data,password=hform.password.data,rol="Administrador")
+        user = User(estacionamiento=hform.nombre.data,user=hform.user.data,passsword=hform.password.data,rol="Administrador")
         db.session.add(estacionamiento)
         db.session.add(user)
         db.session.commit()
@@ -129,7 +129,7 @@ def fadmin():
     hform = form.createuser(request.form)
     if request.method == 'POST':
         user = User(user = request.form['usuario'],
-                    password=request.form['contraseña'],
+                    passsword=request.form['contraseña'],
                     estacionamiento= session['estacionamiento'],
                     rol= request.form['roll'])
         db.session.add(user)
@@ -146,17 +146,42 @@ def lusers():
     lista = User.query.filter(User.estacionamiento.endswith(esta.estacionamiento)).all()
     return render_template('usuarios.html',est = esta,usuario = nombre_user, lista = lista)
 
-@app.route('/eliminar', methods = ['GET','POST'])
+@app.route('/eliminar', methods = ['POST'])
 def eliminar():
-    if request.method == 'POST':
-        idd = request.form['id']
+    idd = request.form['id']
     usuario = User.query.filter_by(id=idd).first()
-    db.session.delete(usuario)
-    db.session.commit()
-    if session['rol'] == 'CREADOR':
-        return redirect(url_for('c_listau'))
+    if request.form['opcion'] == "1":
+        db.session.delete(usuario)
+        db.session.commit()
+        if session['rol'] == 'CREADOR':
+            return redirect(url_for('c_listau'))
+        else:
+            return redirect(url_for('lusers'))
     else:
-        return redirect(url_for('lusers'))
+        password = request.form['new_password']
+        print(password)
+        sha = User.create_password(password,password)
+        print(sha)
+        query = text("CALL actualizar_contrasena(:id, :nueva_contrasena)")
+        with db.engine.connect() as connection:
+            connection.execute(query, id=idd, nueva_contrasena=sha)
+        if session['rol'] == 'CREADOR':
+            return redirect(url_for('c_listau'))
+        else:
+            return redirect(url_for('lusers'))
+
+def upadteuser():
+    if request.method == 'POST':
+        nombre_user = session['cliente']
+        usermod = request.form('')
+        esta = User.query.filter_by(user=nombre_user).first()
+        Tarifas.query.filter_by(estacionamiento=esta.estacionamiento).update(
+            dict(tolerancia=request.form['l1'],
+                 primeras_dos=request.form['l2'],extra=request.form['l3'],pension_dia=request.form['l4'],pension_sem=request.form['l6'],pension_mes=request.form['l6']))
+        db.session.commit()
+        success_message = 'Tarifas Actualizadas Correctamente'
+        flash(success_message)
+    return redirect(url_for('tarifas'))
 
 @app.route('/create', methods = ['GET','POST'])
 def create():
