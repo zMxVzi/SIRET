@@ -80,3 +80,86 @@
             </div>
             <!-- Recent Sales End -->
 {% endblock %}
+
+{% extends 'base/adminbase.html' %}
+{% block slide %}
+<div class="navbar-nav w-100">
+    <a href="admin" class="nav-item nav-link active"><i class="fa fa-tachometer-alt me-2"></i>Tablero</a>
+    {%if est.rol == "Administrador" %}
+    <div class="nav-item dropdown">
+        <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-users me-2"></i>Usuarios</a>
+        <div class="dropdown-menu bg-transparent border-0">
+            <a href="fadmin" class="dropdown-item">Crear usuario</a>
+            <a href="lusers" class="dropdown-item">Lista de usuarios</a>
+        </div>
+    </div>
+    <a href="tarifas" class="nav-item nav-link"><i class="fa fa-chart-bar me-2"></i>Tarifas</a>
+    {%endif%}
+    <a href="boletos" class="nav-item nav-link"><i class="far fa-file-alt me-2"></i>Sistema</a>
+</div>
+{% endblock %}
+{% block content %}
+            <!-- Recent Sales Start -->
+            <div class="col-sm-6 col-xl-3">
+            <div class="bg-secondary rounded d-flex align-items-center justify-content-between p-4">
+                <i class="fa fa-chart-line fa-3x text-primary"></i>
+                <div class="ms-3">
+                    <p class="mb-2">Total ingresos</p>
+                    <h6 class="mb-0">${{ ingresos }}</h6>
+                </div>
+            </div>
+        </div>
+            <div class="container-fluid pt-4 px-4">
+                <div class="bg-secondary text-center rounded p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h6 class="mb-0">Registro de boletos</h6>
+                        <!-- <a href="">Show All</a> -->
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table text-start align-middle table-bordered table-hover mb-0">
+                            <thead>
+                                <tr class="text-white">
+                                    <th scope="col">Codigo</th>
+                                    <th scope="col">Operador</th>
+                                    <th scope="col">Entrada</th>
+                                    <th scope="col">Salida</th>
+                                    <th scope="col">Tarifa</th>
+                                    <th scope="col">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {%for boleto in boletos %}
+                                <tr>
+                                    <td>{{boleto.id}}</td>
+                                    <td>{{boleto.operador}}</td>
+                                    <td>{{boleto.entrada}}</td>
+                                    <td>{% if boleto.tarifa %}{{boleto.salida}}{% endif %}</td>
+                                    <td>{% if boleto.tarifa %}${{boleto.tarifa}}{% endif %}</td>
+                                    <td>{{boleto.estado}}</td>
+                                </tr>
+                                {%endfor%}
+                            </tbody>
+                        </table>
+                        <nav aria-label="Paginación">
+                            <ul class="pagination justify-content-center">
+                                <!-- Botón "anterior" -->
+                                <li class="page-item {% if pagina_actual == 1 %}disabled{% endif %}">
+                                    <a class="btn btn-outline-primary" href="/admin?page={{ pagina_actual - 1 }}" tabindex="-1" {% if pagina_actual == 1 %}aria-disabled="true"{% endif %}>Anterior</a>
+                                </li>
+                                <!-- Números de página -->
+                                {% for pagina_num in range(1, total_paginas + 1) %}
+                                <li class="page-item {% if pagina_num == pagina_actual %}active{% endif %}">
+                                    <a class="btn btn-outline-primary" href="/admin?page={{ pagina_num }}">{{ pagina_num }}</a>
+                                </li>
+                                {% endfor %}
+                                <!-- Botón "siguiente" -->
+                                <li class="page-item {% if pagina_actual == total_paginas %}disabled{% endif %}">
+                                    <a class="btn btn-outline-primary" href="/admin?page={{ pagina_actual + 1 }}" {% if pagina_actual == total_paginas %}aria-disabled="true"{% endif %}>Siguiente</a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <!-- Recent Sales End -->
+{% endblock %}
