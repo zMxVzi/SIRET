@@ -1,11 +1,21 @@
 from flask import redirect,flash,g
-from flask import Flask,request,render_template,make_response,session,redirect,url_for
+from flask import Flask,request,render_template,make_response,session,redirect,url_for,send_file
 from flask_wtf import CSRFProtect
 from config import DevelopmentConfig
 from models import User,db,Estacionamientos,Boletos,Tarifas
 import form
 import json
-from datetime import datetime
+import  os
+from datetime import datetime, timedelta
+from tickets import Ticket
+from reportlab.pdfgen import canvas
+from PIL import Image
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib.units import inch
+import pytz
+from sqlalchemy import text
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
@@ -26,7 +36,7 @@ def before_request():
         db.session.add(estacionamiento)
         db.session.commit()
         user = User(user = 'admin',
-                    password='admin',
+                    passsword='admin',
                     estacionamiento= 'SIRET',
                     rol='CREADOR')
         db.session.add(user)
@@ -71,9 +81,10 @@ def createe():
                     capacidad=hform.capacidad.data,
                     codigo_postal=hform.codigo_postal.data,
                     telefono=hform.telefono.data)
+
+        #db.session.commit()
+        user = User(estacionamiento=hform.nombre.data,user=hform.user.data,passsword=hform.password.data,rol="Administrador")
         db.session.add(estacionamiento)
-        db.session.commit()
-        user = User(estacionamiento=hform.nombre.data,user=hform.user.data,password=hform.password.data,rol="Administrador")
         db.session.add(user)
         db.session.commit()
         precios = Tarifas(tolerancia=15,primeras_dos=20,extra=20,pension_dia=200,pension_sem=1000,pension_mes=4000,estacionamiento=hform.nombre.data)
@@ -105,7 +116,11 @@ def admin():
                            .limit(boletos_por_pagina) \
                            .offset((pagina - 1) * boletos_por_pagina) \
                            .all()
-    return render_template('adminpage.html', est=esta, usuario=nombre_user, boletos=boletos, pagina_actual=pagina, total_paginas=total_paginas)
+    query = text("SELECT calcularSumaTarifas() as suma")
+    with db.engine.connect() as connection:
+        result = connection.execute(query)
+        suma = result.scalar()
+    return render_template('adminpage.html', est=esta, usuario=nombre_user, boletos=boletos, pagina_actual=pagina, total_paginas=total_paginas,ingresos=suma)
 
 @app.route('/fadmin', methods = ['GET','POST'])
 def fadmin():
@@ -114,7 +129,7 @@ def fadmin():
     hform = form.createuser(request.form)
     if request.method == 'POST':
         user = User(user = request.form['usuario'],
-                    password=request.form['contraseña'],
+                    passsword=request.form['contraseña'],
                     estacionamiento= session['estacionamiento'],
                     rol= request.form['roll'])
         db.session.add(user)
@@ -131,17 +146,42 @@ def lusers():
     lista = User.query.filter(User.estacionamiento.endswith(esta.estacionamiento)).all()
     return render_template('usuarios.html',est = esta,usuario = nombre_user, lista = lista)
 
-@app.route('/eliminar', methods = ['GET','POST'])
+@app.route('/eliminar', methods = ['POST'])
 def eliminar():
-    if request.method == 'POST':
-        idd = request.form['id']
+    idd = request.form['id']
     usuario = User.query.filter_by(id=idd).first()
-    db.session.delete(usuario)
-    db.session.commit()
-    if session['rol'] == 'CREADOR':
-        return redirect(url_for('c_listau'))
+    if request.form['opcion'] == "1":
+        db.session.delete(usuario)
+        db.session.commit()
+        if session['rol'] == 'CREADOR':
+            return redirect(url_for('c_listau'))
+        else:
+            return redirect(url_for('lusers'))
     else:
-        return redirect(url_for('lusers'))
+        password = request.form['new_password']
+        print(password)
+        sha = User.create_password(password,password)
+        print(sha)
+        query = text("CALL actualizar_contrasena(:id, :nueva_contrasena)")
+        with db.engine.connect() as connection:
+            connection.execute(query, id=idd, nueva_contrasena=sha)
+        if session['rol'] == 'CREADOR':
+            return redirect(url_for('c_listau'))
+        else:
+            return redirect(url_for('lusers'))
+
+def upadteuser():
+    if request.method == 'POST':
+        nombre_user = session['cliente']
+        usermod = request.form('')
+        esta = User.query.filter_by(user=nombre_user).first()
+        Tarifas.query.filter_by(estacionamiento=esta.estacionamiento).update(
+            dict(tolerancia=request.form['l1'],
+                 primeras_dos=request.form['l2'],extra=request.form['l3'],pension_dia=request.form['l4'],pension_sem=request.form['l6'],pension_mes=request.form['l6']))
+        db.session.commit()
+        success_message = 'Tarifas Actualizadas Correctamente'
+        flash(success_message)
+    return redirect(url_for('tarifas'))
 
 @app.route('/create', methods = ['GET','POST'])
 def create():
@@ -189,15 +229,88 @@ def actializar():
 
 @app.route('/llegada', methods = ['POST']) #Finish
 def llegada():
+    nombre_user = session.get('cliente')
+    esta = User.query.filter_by(user=nombre_user).first()
+    estacionamiento  = Estacionamientos.query.filter_by(nombre=esta.estacionamiento).first()
+    muestra = "show" #bandera
+    espacio = Boletos.query.filter_by(estado='Pendiente').count()
+    if espacio <= estacionamiento.capacidad :
+        boleto = None  # Inicializa boleto fuera del bloque 'POST'
+
+        if request.method == 'POST':
+            boleto = Boletos(entrada=request.form['fecha'], salida=None, tarifa=None, operador=nombre_user,
+                             estacionamiento=esta.estacionamiento,estado= "Pendiente")
+            db.session.add(boleto)
+            db.session.commit()
+        img_data = Ticket.gen_qr(boleto.id)
+    else:
+        success_message = 'Estacionamiento lleno'
+        flash(success_message)
+        return redirect(url_for('boletos'))
+    return render_template('boletos.html', est=esta, usuario=nombre_user, bandera=True, boleto=boleto, muestra1=muestra, qr_code=img_data)
+
+@app.route('/pdf')
+def get_pdf():
+    idd = request.args.get('id','null')
+    boleto = Boletos.query.filter_by(id=idd).first()
+    pdf = Ticket.gen_pdf(boleto)
+    return send_file(pdf, as_attachment=True)
+
+@app.route('/calculoqr')
+def precal():
+    idd = request.args.get('id')
+    if idd is not None:
+        boleto = Boletos.query.filter_by(id=idd).first()
+        hora_actual_utc = datetime.utcnow()
+        # Ajusta la hora según UTC-06:00
+        zona_horaria_utc_06 = pytz.timezone('America/Mexico_City')
+        hora_actual_utc_06 = hora_actual_utc.replace(tzinfo=pytz.utc).astimezone(zona_horaria_utc_06)
+        # Formatea la hora actual
+        hora_formateada = hora_actual_utc_06.strftime('%Y-%m-%dT%H:%M')
+        sal = hora_formateada
+        nombre_user = session['cliente']
+        esta = User.query.filter_by(user=nombre_user).first()
+        muestra2 = "show"  # bandera para mostrar
+        if session['estacionamiento'] == boleto.estacionamiento:
+            if boleto.estado == "Pendiente":
+                tarifa = Ticket.calculo_t(boleto, sal, esta)
+                bandera = True
+            else:
+                tarifa = 0
+                bandera = False
+                success_message = 'Este boleto ya no es vigente'
+                flash(success_message)
+        else:
+            tarifa = 0
+            bandera = False
+            success_message = 'Este boleto no es de este estacionamiento'
+            flash(success_message)
+        return render_template('boletos.html', est=esta, usuario=nombre_user, bandera2=bandera, boleto=boleto,
+                               total=tarifa, salida=boleto.salida, muestra2=muestra2)
+
+
+@app.route('/calculo', methods = ['POST'])
+def calculo():
+    boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
+    sal = request.form['salida']
     nombre_user = session['cliente']
     esta = User.query.filter_by(user=nombre_user).first()
-    muestra = "show"
-    if request.method == 'POST':
-        boleto = Boletos(entrada=request.form['fecha'],salida=None,tarifa=None,operador=nombre_user,estacionamiento=esta.estacionamiento)
-        db.session.add(boleto)
-        db.session.commit()
-        
-    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera=True,boleto=boleto,muestra1=muestra)
+    muestra2 = "show"  # bandera para mostrar
+    if session['estacionamiento'] == boleto.estacionamiento:
+        if boleto.estado == "Pendiente":
+                tarifa = Ticket.calculo_t(boleto,sal,esta)
+                bandera = True
+        else:
+            tarifa = 0
+            bandera=False
+            success_message = 'Este boleto ya no es vigente'
+            flash(success_message)
+    else:
+        tarifa = 0
+        bandera = False
+        success_message = 'Este boleto no es de este estacionamiento'
+        flash(success_message)
+    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera2=bandera,boleto=boleto,total=tarifa,salida=boleto.salida, muestra2=muestra2)
 
 @app.route('/salida', methods = ['POST']) #Finish
 def salida():
@@ -205,37 +318,17 @@ def salida():
     nombre_user = session['cliente']
     esta = User.query.filter_by(user=nombre_user).first()
     boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
-    if boleto.tarifa is None:
-        if request.method == 'POST':
-            Boletos.query.filter_by(id=request.form['codigo']).update(
-                dict(salida=request.form['salida']))
-            db.session.commit()
-            boleto = Boletos.query.filter_by(id=request.form['codigo']).first()
-            fecha1_dt = datetime.strptime(str(boleto.entrada), '%Y-%m-%d %H:%M:%S')
-            fecha2_dt = datetime.strptime(str(boleto.salida), '%Y-%m-%d %H:%M:%S')
-            tiempo = fecha2_dt - fecha1_dt
-            tiempo = tiempo.total_seconds() / 60
-            tarifa = Tarifas.query.filter_by(estacionamiento=esta.estacionamiento).first()
-            if tiempo <= 15 :
-                total = 0
-            elif tiempo <=120 :
-                total = tarifa.primeras_dos
-            elif tiempo >=121 :
-                tiempo = tiempo -120
-                if tiempo <=59:
-                    total = tarifa.primeras_dos+tarifa.extra
-                else:
-                    total = (tiempo//60)*tarifa.extra+tarifa.primeras_dos
-            bandera=True
-            Boletos.query.filter_by(id=request.form['codigo']).update(
-                dict(tarifa=total))
-            db.session.commit()
-    else:
-        total = 0
-        bandera=False
-        success_message = 'Este boleto ya no es vigente'
+    if request.method == 'POST':
+        tarifa = Ticket.calculo_t(boleto, boleto.salida, esta)
+        bandera=True
+        Boletos.query.filter_by(id=request.form['codigo']).update(
+            dict(tarifa=tarifa))
+        Boletos.query.filter_by(id=request.form['codigo']).update(
+            dict(estado="Pagado"))
+        db.session.commit()
+        success_message = 'Transaccion correcta'
         flash(success_message)
-    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera2=bandera,boleto=boleto,total=total,salida=boleto.salida, muestra2=muestra2)
+    return render_template('boletos.html',est = esta,usuario = nombre_user,bandera2=bandera,boleto=boleto,total=tarifa,salida=boleto.salida, muestra2=muestra2)
 
 @app.route('/creador')
 def creador():
