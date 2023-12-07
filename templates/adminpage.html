@@ -50,8 +50,8 @@
                                     <td>{{boleto.id}}</td>
                                     <td>{{boleto.operador}}</td>
                                     <td>{{boleto.entrada}}</td>
-                                    <td>{% if boleto.tarifa %}{{boleto.salida}}{% endif %}</td>
-                                    <td>{% if boleto.tarifa %}${{boleto.tarifa}}{% endif %}</td>
+                                    <td>{% if boleto.estado != "Pendiente" %}{{boleto.salida}}{% endif %}</td>
+                                    <td>{% if boleto.estado != "Pendiente" %}${{boleto.tarifa}}{% endif %}</td>
                                     <td>{{boleto.estado}}</td>
                                 </tr>
                                 {%endfor%}

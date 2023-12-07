@@ -162,10 +162,10 @@ def eliminar():
         print(password)
         sha = User.create_password(password,password)
         print(sha)
-        query = text("CALL actualizar_contrasena(:id, :nueva_contrasena)")
-        params = {'id': idd, 'nueva_contrasena': sha}
-        with db.engine.connect() as connection:
-            connection.execute(query,params)
+        stmt = text("CALL actualizar_contrasena(:id, :nueva_contrasena)")
+        db.session.execute(stmt, {'id': idd, 'nueva_contrasena': sha})
+        db.session.commit()
+
         if session['rol'] == 'CREADOR':
             return redirect(url_for('c_listau'))
         else:
