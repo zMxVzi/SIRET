@@ -1,0 +1,17 @@
+CREATE PROCEDURE actualizar_contrasena(IN p_id INT, IN p_nueva_contrasena VARCHAR(255))
+BEGIN
+    UPDATE users
+    SET password = p_nueva_contrasena
+    WHERE id = p_id;
+END
+
+
+
+CREATE FUNCTION calcularSumaTarifas()
+RETURNS DECIMAL
+DETERMINISTIC
+BEGIN
+    DECLARE suma DECIMAL;
+    SELECT COALESCE(SUM(tarifa), 0) INTO suma FROM Boletos;
+    RETURN suma;
+END
