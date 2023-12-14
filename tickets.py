@@ -103,7 +103,7 @@ class Ticket:
         tiempo = fecha2_dt - fecha1_dt
         tiempo = tiempo.total_seconds() / 60
         tarifa = Tarifas.query.filter_by(estacionamiento=esta.estacionamiento).first()
-        if tiempo <= 15:
+        if tiempo <= tarifa.tolerancia:
             total = 0
         elif tiempo <= 120:
             total = tarifa.primeras_dos
